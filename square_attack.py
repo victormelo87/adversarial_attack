@@ -1,6 +1,7 @@
 import numpy as np
 from PIL import Image
 import random
+import json
 
 class SquareAttack:
     def __init__(self, eps, n_iters, initial_p, num_squares):
@@ -38,10 +39,20 @@ class SquareAttack:
             imagem_perturbada = np.clip(imagem_perturbada, 0, 1)  
             perturbed_pil_image = Image.fromarray((imagem_perturbada * 255).astype(np.uint8))
 
-            resposta = send_image(perturbed_pil_image, server_url)
-            if resposta and "aprovado" in resposta.lower():
-                perturbed_pil_image.save("imagem_pert.jpg")
-                return perturbed_pil_image
+            retorno = send_image(perturbed_pil_image, server_url)
+            if retorno and retorno.strip():
+                try:
+                    resposta_json = json.loads(retorno)
+                    classe = resposta_json.get("class")
+                    
+                    if classe == "aprovado\n":
+                        perturbed_pil_image.save("imagem_pert.jpg")
+                        return perturbed_pil_image
+                    else:
+                        print(f"A imagem não foi salva porque a classe foi '{classe.strip()}'.\n")
+                except json.JSONDecodeError as e:
+                    print(f"Erro ao decodificar JSON: {e}. Resposta bruta: {retorno}")
+            else:
+                print("Nenhuma resposta válida foi recebida ou a resposta está vazia.")
 
-        imagem = Image.fromarray((imagem_perturbada * 255).astype(np.uint8))
-        return imagem
+        return None

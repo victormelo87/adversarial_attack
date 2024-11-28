@@ -15,6 +15,8 @@ def main():
     if imagem_perturbada:
         save_image(imagem_perturbada, "imagem_pert.jpg")
         print("Ataque concluído. Verifique o arquivo 'imagem_pert.jpg'.")
+    else:
+        print("Nenhuma imagem foi salva. O ataque não resultou em uma classificação 'aprovado'.")
 
 if __name__ == "__main__":
     main()

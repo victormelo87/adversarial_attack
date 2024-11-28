@@ -20,7 +20,6 @@ def save_image(image, file_path):
     except Exception as e:
         print(f"Erro ao salvar a imagem: {e}")
 
-
 def send_image(image, url):
     if url.startswith("http://"):
         url = url.replace("http://", "")
@@ -36,22 +35,34 @@ def send_image(image, url):
 
     buffer = BytesIO()
     image.save(buffer, format="JPEG")
-    buffer.seek(0) 
+    buffer.seek(0)
     image_data = buffer.read()
 
-    connection = http.client.HTTPConnection(host)
+    boundary = "----WebKitFormBoundary7MA4YWxkTrZu0gW"
+    body = (
+        f"--{boundary}\r\n"
+        f"Content-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\n"
+        f"Content-Type: image/jpeg\r\n\r\n"
+    ).encode("utf-8") + image_data + f"\r\n--{boundary}--\r\n".encode("utf-8")
+
     headers = {
-        "Content-Type": "image/jpeg",
-        "Content-Length": str(len(image_data))
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+        "Content-Length": str(len(body))
     }
 
-    connection.request("POST", path, body=image_data, headers=headers)
-    response = connection.getresponse()
+    try:
+        print(f"Conectando ao host: {host}")
+        connection = http.client.HTTPConnection(host)
 
-    if response.status == 200:
-        print("Imagem enviada com sucesso!")
-        response_data = response.read().decode("utf-8")
-        return response_data  
-    else:
-        print(f"Erro ao enviar a imagem. Status: {response.status}")
+        print("Enviando a imagem para o servidor...")
+        connection.request("POST", path, body=body, headers=headers)
+        response = connection.getresponse()
+
+        response_data = response.read().decode("utf-8").strip()
+        print(f"Resposta do servidor: {response_data}")
+        return response_data if response.status == 200 else None
+    except Exception as e:
+        print(f"Erro durante a conexão ou envio: {e}")
         return None
+    finally:
+        connection.close()
